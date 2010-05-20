@@ -1,6 +1,6 @@
 import operator
 """
-This function object is to be inherited by functions
+This function object is to be inherited by functions.
 It defines operators which are used in place of certain commands
 
 Thus:
