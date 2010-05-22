@@ -7,9 +7,16 @@ Thus:
 object1*object2 -> object1.__mul__(object2) 
 
 """
-class function(object):
+class Expr(object):
+
     def __call__(self):
-        print self.whoami()
+        return self
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __str__(self):
+        return str(self)
 
     def __add__(self, other):
         return Add(self, other)
@@ -24,7 +31,7 @@ class function(object):
 These define sine and cosine functions with the ability to print themselves and take a derivative of themself
 
 """
-class sin(function):
+class sin(Expr):
 
     def __init__(self, arg):
         self.arg = arg
@@ -32,10 +39,10 @@ class sin(function):
     def derivs(self):
         return cos(self.arg)
        
-    def whoami(self):
+    def str(self):
         return "sin(" + self.arg + ")"
        
-class cos(function):
+class cos(Expr):
 
     def __init__(self, arg):
         self.arg = arg
@@ -46,10 +53,10 @@ class cos(function):
     def whoami(self):
         return "cos(" + self.arg + ")"
 """
-mul and add are the objects that hold two bits of data that are multipliedn or added
+mul and add are the objects that hold two bits of data that are multiplied or added
 
 """
-class mul(function):
+class mul(Expr):
 
     def __init__(self, *args):
         self.args = args
@@ -78,7 +85,7 @@ class mul(function):
                 
         return Add(mul(self.arg1.derivs(),self.arg2), mul(self.arg1, self.arg2.derivs()))
 
-class Add(function):
+class Add(Expr):
 
     def __init__(self, *arg):
         self.arg1 = arg[0]
@@ -113,7 +120,7 @@ Not working yet ; would represent a power
 Also need to add a symbols class so we can take derivative with respect to different variables
 
 """
-class Pow(function):
+class Pow(Expr):
 
     def __init__(self,arg,power):
         self.power = power
@@ -129,7 +136,7 @@ class Pow(function):
 """
 a wave function; pretty basic right now
 """        
-class psi(function):
+class psi(Expr):
     def __init__(self, wave):
         self.wave = wave
         
