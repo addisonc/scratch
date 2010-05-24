@@ -1,12 +1,15 @@
 import operator
+
 """
-This function object is to be inherited by functions.
-It defines operators which are used in place of certain commands
+
+This Expr (expression) object is to be inherited by functions and other relevant objects.
+It defines operators which are used in place of certain commands.
 
 Thus:
 object1*object2 -> object1.__mul__(object2) 
 
 """
+
 class Expr(object):
 
     def __call__(self):
@@ -16,19 +19,40 @@ class Expr(object):
         return self.__str__()
 
     def __str__(self):
-        return str(self)
+        return self.__str__()
 
     def __add__(self, other):
         return Add(self, other)
 
-    def __mul__(self,other):
-        return mul(self, other)
+    def __mul__(self, other):
+        return Mul(self, other)
+        
+    def __pow__(self, other):
+        return Pow(self, other)
 
     def derivs(self):
-        raise NotImplementedError("derivs is not implmented")
+        raise NotImplementedError("derivs is not implemented")
+        
+class Symbol(Expr):
+
+    """
+    
+    Input argument (an English letter) as a string.
+    
+    """
+    
+    def __init__(self, arg):
+        self.arg = arg
+        
+    def __str__(self):
+        return self.arg
+        
+    def derivs(self):
+        return int(1)
 
 """
-These define sine and cosine functions with the ability to print themselves and take a derivative of themself
+
+These define sine and cosine functions with the ability to print themselves and take derivatives of themselves.
 
 """
 class sin(Expr):
@@ -39,8 +63,8 @@ class sin(Expr):
     def derivs(self):
         return cos(self.arg)
        
-    def str(self):
-        return "sin(" + self.arg + ")"
+    def __str__(self):
+        return "sin(" + self.arg.__str__() + ")"
        
 class cos(Expr):
 
@@ -48,105 +72,128 @@ class cos(Expr):
         self.arg = arg
        
     def derivs(self):
-        return mul(-1, sin(self.arg))
+        return Mul(-1, sin(self.arg))
 
-    def whoami(self):
-        return "cos(" + self.arg + ")"
+    def __str__(self):
+        return "cos(" + self.arg.__str__() + ")"
+        
 """
-mul and add are the objects that hold two bits of data that are multiplied or added
+
+Mul and Add are the objects that hold two bits of data that are multiplied or added respectively.
 
 """
-class mul(Expr):
+
+class Mul(Expr):
 
     def __init__(self, *args):
         self.args = args
 
-    def whoami(self):
-        if isinstance(self.arg1, int):
-            str1 = str(self.arg1)
+    def __str__(self):
+        if isinstance(self.args[0], int):
+            str1 = str(self.args[0])
         else:
-            str1 = self.arg1.whoami()
+            str1 = self.args[0].__str__()
             
-        if isinstance(self.arg2, int):
-            str2 = str(self.arg2)
+        if isinstance(self.args[1], int):
+            str2 = str(self.args[1])
         else:
-            str2 = self.arg2.whoami()
+            str2 = self.args[1].__str__()
         
-        return str1 + "*" + str2
+        return "(" + str1 + "*" + str2 + ")"
 
     def derivs(self):
-        arg1int = isinstance(self.arg1, int)
-        arg2int = isinstance(self.arg1,int)
+        arg1int = isinstance(self.args[0], int)
+        arg2int = isinstance(self.args[1], int)
         
         if arg1int:
-            return mul(self.arg2.derivs(),self.arg1) 
+            return Mul(self.args[1].derivs(),self.args[0])
         elif arg2int:
-            return mul(self.arg1.derivs(),self.arg2)
+            return Mul(self.args[0].derivs(),self.args[1])
                 
-        return Add(mul(self.arg1.derivs(),self.arg2), mul(self.arg1, self.arg2.derivs()))
+        return Add(Mul(self.args[0].derivs(),self.args[1]), Mul(self.args[0], self.args[1].derivs()))
 
 class Add(Expr):
 
-    def __init__(self, *arg):
-        self.arg1 = arg[0]
-        self.arg2 = arg[1]
+    def __init__(self, *args):
+        self.args = args
 
-    def whoami(self):
-        if isinstance(self.arg1, int):
-            str1 = str(self.arg1)
+    def __str__(self):
+        if isinstance(self.args[0], int):
+            str1 = str(self.args[0])
         else:
-            str1 = self.arg1.whoami()
+            str1 = self.args[0].__str__()
             
-        if isinstance(self.arg2, int):
-            str2 = str(self.arg2)
+        if isinstance(self.args[1], int):
+            str2 = str(self.args[1])
         else:
-            str2 = self.arg2.whoami()  
+            str2 = self.args[1].__str__()  
               
-        return str1 + " + " + str2
+        return "(" + str1 + " + " + str2 + ")"
 
     def derivs(self):
-        arg1int = isinstance(self.arg1, int)
-        arg2int = isinstance(self.arg1,int)
+        arg1int = isinstance(self.args[0], int)
+        arg2int = isinstance(self.args[1],int)
         
         if arg1int:
-            return self.arg2.derivs()
+            return self.args[1].derivs()
         elif arg2int:
-            return self.arg1.derivs()
+            return self.args[0].derivs()
             
-        return Add(self.arg1.derivs(),self.arg2.derivs())
+        return Add(self.args[0].derivs(),self.args[1].derivs())
         
 """
-Not working yet ; would represent a power
-Also need to add a symbols class so we can take derivative with respect to different variables
+
+Pow raises arguments to a power.
 
 """
+
 class Pow(Expr):
 
-    def __init__(self,arg,power):
-        self.power = power
-        self.arg = arg
+    """
 
-    def whoami(self):
-        return "(" + self.arg + ")" + "**" + str(self.power)
+    Only raise arguments to integers!
+
+    """
+
+    def __init__(self, *args):
+        self.args = args
+
+    def __str__(self):
+        if isinstance(self.args[0], int):
+            return "[" + str(self.args[0]) + "]" + "**" + str(self.args[1])
+        else:
+            return "[" + self.args[0].__str__() + "]" + "**" + str(self.args[1])
 
     def derivs(self):
-        self.power -= 1
-        return mul(self.power+1, self)
+        return Mul(int(self.args[1]), Pow(self.args[0], int(self.args[1]-1)))
 
 """
+
 a wave function; pretty basic right now
+
 """        
 class psi(Expr):
     def __init__(self, wave):
         self.wave = wave
         
-    def whoami(self):
-        return self.wave.whoami()
+    def __str__(self):
+        return self.wave.__str__()
         
     def derivs(self):
         return self.wave.derivs()
         
-x = "x"
-y = sin(x)
-q = cos(x)
-z = y*q    
+x = Symbol('x')
+y = Symbol('y')
+z = Symbol('z')
+
+u = sin(x)
+v = cos(y)
+
+r = u*v*z
+s = u+v+z
+t = x**2*y**3*z**4
+p = x**2+y**3+z**4
+
+a = r+s
+b = r*s
+c = t+s*r
