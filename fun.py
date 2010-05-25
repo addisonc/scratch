@@ -30,25 +30,28 @@ class Expr(object):
     def __pow__(self, other):
         return Pow(self, other)
 
-    def derivs(self):
+    def derivs(self, symbol):
         raise NotImplementedError("derivs is not implemented")
         
 class Symbol(Expr):
 
     """
     
-    Input argument (an English letter) as a string.
+    Input argument as an English letter.
     
     """
     
     def __init__(self, arg):
-        self.arg = arg
+        self.arg = str(arg)
         
     def __str__(self):
         return self.arg
         
-    def derivs(self):
-        return int(1)
+    def derivs(self, symbol):
+        if str(symbol) == self.arg:
+            return int(1)
+        else:
+            return int(0)
 
 """
 
@@ -60,8 +63,8 @@ class sin(Expr):
     def __init__(self, arg):
         self.arg = arg
          
-    def derivs(self):
-        return cos(self.arg)
+    def derivs(self, symbol):
+        return cos(self.arg)*self.arg.derivs(symbol)
        
     def __str__(self):
         return "sin(" + self.arg.__str__() + ")"
@@ -71,8 +74,8 @@ class cos(Expr):
     def __init__(self, arg):
         self.arg = arg
        
-    def derivs(self):
-        return Mul(-1, sin(self.arg))
+    def derivs(self, symbol):
+        return sin(self.arg)*-1*self.arg.derivs(symbol)
 
     def __str__(self):
         return "cos(" + self.arg.__str__() + ")"
@@ -80,13 +83,31 @@ class cos(Expr):
 """
 
 Mul and Add are the objects that hold two bits of data that are multiplied or added respectively.
-
+ 
 """
 
 class Mul(Expr):
 
+    __demulargs__ = []
+    
     def __init__(self, *args):
-        self.args = args
+        for it in args:
+            if isinstance(it,Mul):
+                it.demul()
+            else:
+                __demulargs__.append(it)
+        self.args = __demulargs__
+
+
+
+    def demul(self):
+        for arg in self.args:
+        
+            if isinstance(arg, Mul):
+                demul(arg)
+                
+            else:
+                __demulargs__.append(arg)
 
     def __str__(self):
         if isinstance(self.args[0], int):
@@ -99,7 +120,7 @@ class Mul(Expr):
         else:
             str2 = self.args[1].__str__()
         
-        return "(" + str1 + "*" + str2 + ")"
+        return str1 + "*" + str2
 
     def derivs(self):
         arg1int = isinstance(self.args[0], int)
@@ -128,7 +149,7 @@ class Add(Expr):
         else:
             str2 = self.args[1].__str__()  
               
-        return "(" + str1 + " + " + str2 + ")"
+        return str1 + " + " + str2
 
     def derivs(self):
         arg1int = isinstance(self.args[0], int)
@@ -165,7 +186,10 @@ class Pow(Expr):
             return "[" + self.args[0].__str__() + "]" + "**" + str(self.args[1])
 
     def derivs(self):
-        return Mul(int(self.args[1]), Pow(self.args[0], int(self.args[1]-1)))
+        if self.args[1] == int(1):
+            return int(1)
+        else:
+            return Mul(int(self.args[1]), Pow(self.args[0], int(self.args[1]-1)))
 
 """
 
