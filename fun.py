@@ -12,7 +12,7 @@ class function(object):
         print self.whoami()
 
     def __add__(self, other):
-        return Add(self, other)
+        return add(self, other)
 
     def __mul__(self,other):
         return mul(self, other)
@@ -76,9 +76,9 @@ class mul(function):
         elif arg2int:
             return mul(self.arg1.derivs(),self.arg2)
                 
-        return Add(mul(self.arg1.derivs(),self.arg2), mul(self.arg1, self.arg2.derivs()))
+        return add(mul(self.arg1.derivs(),self.arg2), mul(self.arg1, self.arg2.derivs()))
 
-class Add(function):
+class add(function):
 
     def __init__(self, *arg):
         self.arg1 = arg[0]
@@ -106,7 +106,7 @@ class Add(function):
         elif arg2int:
             return self.arg1.derivs()
             
-        return Add(self.arg1.derivs(),self.arg2.derivs())
+        return add(self.arg1.derivs(),self.arg2.derivs())
         
 """
 Not working yet ; would represent a power
