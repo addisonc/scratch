@@ -1,4 +1,5 @@
 import operator
+import math
 
 """
 
@@ -16,9 +17,6 @@ class Expr(object):
         return self
 
     def __repr__(self):
-        return self.__str__()
-
-    def __str__(self):
         return self.__str__()
 
     def __add__(self, other):
@@ -58,16 +56,23 @@ class Symbol(Expr):
 These define sine and cosine functions with the ability to print themselves and take derivatives of themselves.
 
 """
-class sin(Expr):
+
+s = Sin(x)
+s(2)
+
+class Sin(Expr):
 
     def __init__(self, arg):
         self.arg = arg
-         
+
+    def __call__(self, x):
+        return math.sin(float(x))
+
     def derivs(self, symbol):
         return cos(self.arg)*self.arg.derivs(symbol)
        
     def __str__(self):
-        return "sin(" + self.arg.__str__() + ")"
+        return "sin(" + str(self.arg) + ")"
        
 class cos(Expr):
 
@@ -78,89 +83,82 @@ class cos(Expr):
         return sin(self.arg)*-1*self.arg.derivs(symbol)
 
     def __str__(self):
-        return "cos(" + self.arg.__str__() + ")"
+        return "cos(" + str(self.arg) + ")"
         
 """
 
 Mul and Add are the objects that hold two bits of data that are multiplied or added respectively.
- 
+
 """
 
 class Mul(Expr):
 
-    __demulargs__ = []
-    
     def __init__(self, *args):
-        for it in args:
-            if isinstance(it,Mul):
-                it.demul()
-            else:
-                __demulargs__.append(it)
-        self.args = __demulargs__
+        self.args = self.flatten_args(args)
 
-
-
-    def demul(self):
-        for arg in self.args:
-        
+    def flatten_args(self, args):
+        flat_args = []
+        for arg in args:
             if isinstance(arg, Mul):
-                demul(arg)
-                
+                flat_args.extend(arg.args)
             else:
-                __demulargs__.append(arg)
+                flat_args.append(arg)
+        return flat_args
 
     def __str__(self):
-        if isinstance(self.args[0], int):
-            str1 = str(self.args[0])
-        else:
-            str1 = self.args[0].__str__()
-            
-        if isinstance(self.args[1], int):
-            str2 = str(self.args[1])
-        else:
-            str2 = self.args[1].__str__()
-        
-        return str1 + "*" + str2
+        arg_string = ''
+        for arg in self.args:
+            if len(arg_string) == 0:
+                arg_string = arg_string + str(arg)
+            else:
+                arg_string = arg_string + "*" + str(arg)
+        return arg_string
 
-    def derivs(self):
-        arg1int = isinstance(self.args[0], int)
-        arg2int = isinstance(self.args[1], int)
-        
-        if arg1int:
-            return Mul(self.args[1].derivs(),self.args[0])
-        elif arg2int:
-            return Mul(self.args[0].derivs(),self.args[1])
-                
-        return Add(Mul(self.args[0].derivs(),self.args[1]), Mul(self.args[0], self.args[1].derivs()))
+    def derivs(self, symbol):
+        derivs = []
+        for arg in self.args:
+            if isinstance(arg, (int,float)):
+                derivs.append(0)
+            else:
+                derivs.append(arg.derivs(symbol))
+        muls = []
+        for i in range(len(self.args)):
+            mul_args = self.args[:i] + [derivs[i]] + self.args[i+1:]
+            muls.append(Mul(*mul_args))
+        return Add(*muls)
+
 
 class Add(Expr):
 
     def __init__(self, *args):
-        self.args = args
+        self.args = self.flatten_args(args)
+
+    def flatten_args(self, args):
+        flat_args = []
+        for arg in args:
+            if isinstance(arg, Add):
+                flat_args.extend(arg.args)
+            else:
+                flat_args.append(arg)
+        return flat_args
 
     def __str__(self):
-        if isinstance(self.args[0], int):
-            str1 = str(self.args[0])
-        else:
-            str1 = self.args[0].__str__()
-            
-        if isinstance(self.args[1], int):
-            str2 = str(self.args[1])
-        else:
-            str2 = self.args[1].__str__()  
-              
-        return str1 + " + " + str2
+        arg_string = ''
+        for arg in self.args:
+            if len(arg_string) == 0:
+                arg_string = arg_string + str(arg)
+            else:
+                arg_string = arg_string + "+" + str(arg)
+        return arg_string
 
-    def derivs(self):
-        arg1int = isinstance(self.args[0], int)
-        arg2int = isinstance(self.args[1],int)
-        
-        if arg1int:
-            return self.args[1].derivs()
-        elif arg2int:
-            return self.args[0].derivs()
-            
-        return Add(self.args[0].derivs(),self.args[1].derivs())
+    def derivs(self, symbol):
+        deriv_args = Add()
+        for arg in self.args:
+            if isinstance(arg, (int,float)):
+                deriv_args = Add(deriv_args,0)
+            else:
+                deriv_args = Add(deriv_args, arg.derivs(symbol))
+        return deriv_args
         
 """
 
@@ -185,11 +183,14 @@ class Pow(Expr):
         else:
             return "[" + self.args[0].__str__() + "]" + "**" + str(self.args[1])
 
-    def derivs(self):
-        if self.args[1] == int(1):
-            return int(1)
+    def derivs(self, symbol):
+        if str(self.args[0]) == str(symbol):
+            if self.args[1] == int(1):
+                return int(1)
+            else:
+                return Mul(int(self.args[1]), Pow(self.args[0], int(self.args[1]-1)))
         else:
-            return Mul(int(self.args[1]), Pow(self.args[0], int(self.args[1]-1)))
+            return 0
 
 """
 
@@ -209,13 +210,15 @@ class psi(Expr):
 x = Symbol('x')
 y = Symbol('y')
 z = Symbol('z')
+f = Symbol('f')
+g = Symbol('g')
 
 u = sin(x)
 v = cos(y)
 
 r = u*v*z
 s = u+v+z
-t = x**2*y**3*z**4
+t = x**2*y**3*z**4*f*g
 p = x**2+y**3+z**4
 
 a = r+s
